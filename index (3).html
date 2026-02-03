@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VECTRON JUNIORS</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+  html, body { height: 100%; width: 100%; overflow: hidden; }
+
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(to bottom, #e0f7ff, #a0d8ff);
+    color: #fff;
+  }
+
+  /* Pages */
+  .page {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .hidden { opacity: 0; pointer-events: none; transform: translateY(20px); }
+  .visible { opacity: 1; pointer-events: all; transform: translateY(0); }
+
+  /* Title */
+  h1 {
+    font-size: 3rem;
+    color: #0077cc;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    margin-bottom: 8vh;
+    text-align: center;
+  }
+
+  /* Buttons */
+  .btn {
+    width: 70%;
+    max-width: 300px;
+    padding: 1rem;
+    margin: 2vh 0;
+    font-size: 1.5rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    color: #fff;
+    background: #00aaff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .btn:hover {
+    background: #0091dd;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  }
+
+  /* Info page */
+  #infoPage p {
+    font-size: 1.3rem;
+    text-align: center;
+    margin-bottom: 5vh;
+    padding: 0 5vw;
+  }
+
+  /* Game canvas */
+  #gameCanvas {
+    display: block;
+    background: #1b4f72;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- MENU PAGE -->
+<div id="menuPage" class="page visible">
+  <h1>VECTRON JUNIORS</h1>
+  <button class="btn" id="infoBtn">INFO</button>
+  <button class="btn" id="playBtn">PLAY GAME</button>
+</div>
+
+<!-- INFO PAGE -->
+<div id="infoPage" class="page hidden" style="background:#a0d8ff; color:#003366;">
+  <p id="infoText">Monoxila a fost descoperită în albia râului Someș, în zona Berindan (județul Satu Mare). Ea datează din perioada medievală, mai exact din secolele XIV–XV (anii 1300–1400).
+
+Barca a fost făcută dintr-un singur trunchi de copac și era folosită de locuitorii și comercianții medievali pentru transportul mărfurilor. Cel mai des era folosită pentru transportul sării din zona Ocna Dej, de-a lungul râului Someș.
+
+În România au fost descoperite monoxile din perioade diferite, inclusiv foarte vechi, din preistorie. Totuși, monoxila descoperită în râul Someș este considerată un artefact medieval.</p>
+  <button class="btn" id="backBtn">BACK</button>
+</div>
+
+<!-- GAME PAGE -->
+<div id="gamePage" class="page hidden">
+  <canvas id="gameCanvas"></canvas>
+</div>
+
+<script>
+const menuPage = document.getElementById('menuPage');
+const infoPage = document.getElementById('infoPage');
+const gamePage = document.getElementById('gamePage');
+
+const infoBtn = document.getElementById('infoBtn');
+const playBtn = document.getElementById('playBtn');
+const backBtn = document.getElementById('backBtn');
+
+// ================= TRANSITIONS =================
+function showPage(show, hide1, hide2){
+  show.classList.remove('hidden'); show.classList.add('visible');
+  hide1.classList.remove('visible'); hide1.classList.add('hidden');
+  hide2.classList.remove('visible'); hide2.classList.add('hidden');
+}
+
+// Show INFO page
+infoBtn.addEventListener('click', () => { showPage(infoPage, menuPage, gamePage); });
+
+// Back to MENU
+backBtn.addEventListener('click', () => { showPage(menuPage, infoPage, gamePage); });
+
+// Show GAME
+playBtn.addEventListener('click', () => { 
+  showPage(gamePage, menuPage, infoPage);
+  startGame(); 
+});
+
+// ================= MAZE GAME =================
+function startGame() {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const GAME_SIZE = 1920; // square canvas
+  canvas.width = GAME_SIZE;
+  canvas.height = GAME_SIZE;
+
+  // Maintain square aspect ratio
+  function resizeCanvas(){
+    if(window.innerWidth < window.innerHeight){
+      canvas.style.width = '100vw';
+      canvas.style.height = '100vw';
+    } else {
+      canvas.style.width = '100vh';
+      canvas.style.height = '100vh';
+    }
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // GRID MAP
+  const gridMap = [
+    "1111111111111111","1000000000000001","1011110111111101","1010000100000101",
+    "1010111101110101","1010100001010101","1010111111010101","1000100000010001",
+    "1110101111011101","1000101000010001","1011101011110111","1010001000000001",
+    "1010111111111101","1010000000000101","1000000000000001","1111111111111111"
+  ];
+
+  const walls = [];
+  const cell = 120;
+  const thickness = 24;
+
+  function buildMaze() {
+    walls.length = 0;
+    for(let y=0;y<gridMap.length;y++){
+      for(let x=0;x<gridMap[y].length;x++){
+        if(gridMap[y][x]=="1"){
+          walls.push({x:x*cell,y:y*cell,w:cell,h:thickness});
+          walls.push({x:x*cell,y:y*cell,w:thickness,h:cell});
+        }
+      }
+    }
+  }
+  buildMaze();
+
+  const player = {x:1*cell+20, y:14*cell+40, w:60, h:18, speed:5.2};
+  let target = {x:player.x, y:player.y};
+  const finish = {x:14*cell+20, y:1*cell+20, w:160, h:160};
+
+  // ============== TOUCH INPUT =================
+  function getPointerPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return { x: (e.clientX - rect.left)*scaleX, y: (e.clientY - rect.top)*scaleY };
+  }
+  canvas.addEventListener('pointerdown', e => {
+    const pos = getPointerPos(e);
+    target.x = pos.x; target.y = pos.y;
+  });
+  canvas.addEventListener('pointermove', e => {
+    if(e.buttons){
+      const pos = getPointerPos(e);
+      target.x = pos.x; target.y = pos.y;
+    }
+  });
+
+  function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+
+  function update(){
+    let dx=target.x-(player.x+player.w/2);
+    let dy=target.y-(player.y+player.h/2);
+    let d=Math.hypot(dx,dy);
+    if(d>1){
+      dx=dx/d*player.speed;
+      dy=dy/d*player.speed;
+      player.x+=dx; for(let w of walls) if(hit(player,w)) player.x-=dx;
+      player.y+=dy; for(let w of walls) if(hit(player,w)) player.y-=dy;
+    }
+    if(hit(player,finish)){
+      alert("You reached the harbor! 🏛️⚓");
+      player.x=1*cell+20; player.y=14*cell+40;
+    }
+  }
+
+  let wave=0;
+  function drawWater(){
+    wave+=0.02;
+    ctx.fillStyle="#1b4f72";
+    ctx.fillRect(0,0,GAME_SIZE,GAME_SIZE);
+    ctx.strokeStyle="rgba(255,255,255,0.05)";
+    for(let y=0;y<GAME_SIZE;y+=48){
+      ctx.beginPath();
+      for(let x=0;x<GAME_SIZE;x+=48){
+        ctx.lineTo(x, y + Math.sin(x*0.02+wave)*6);
+      }
+      ctx.stroke();
+    }
+  }
+
+  function draw(){
+    drawWater();
+    ctx.fillStyle="#6c757d"; for(let w of walls) ctx.fillRect(w.x,w.y,w.w,w.h);
+    ctx.fillStyle="#27ae60"; ctx.fillRect(finish.x,finish.y,finish.w,finish.h);
+    ctx.fillStyle="#fff"; ctx.font="36px sans-serif"; ctx.fillText("HARBOR",finish.x+12,finish.y+96);
+    ctx.fillStyle="#8b5a2b"; ctx.fillRect(player.x,player.y,player.w,player.h);
+    ctx.strokeStyle="#5a3a1a"; ctx.strokeRect(player.x,player.y,player.w,player.h);
+    ctx.strokeStyle="rgba(0,0,0,0.25)";
+    ctx.beginPath();
+    ctx.moveTo(player.x+player.w/3,player.y); ctx.lineTo(player.x+player.w/3,player.y+player.h);
+    ctx.moveTo(player.x+2*player.w/3,player.y); ctx.lineTo(player.x+2*player.w/3,player.y+player.h);
+    ctx.stroke();
+  }
+
+  function loop(){ update(); draw(); requestAnimationFrame(loop); }
+  loop();
+}
+</script>
+
+</body>
+</html>
